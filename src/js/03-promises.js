@@ -10,9 +10,6 @@ const formData = {
   step: 0,
   amount: 0,
 }
-delayInput.addEventListener('input', takingInputInfo);
-stepInput.addEventListener('input', takingInputInfo);
-amountInput.addEventListener('input', takingInputInfo);
 
 const takingInputInfo = (e) => { formData[e.target.name] = Number(e.target.value); }
 
@@ -29,6 +26,12 @@ function createPromise(position, delay) {
     }, delay )
   })
 }
+
+delayInput.addEventListener('input', takingInputInfo);
+
+stepInput.addEventListener('input', takingInputInfo);
+
+amountInput.addEventListener('input', takingInputInfo);
 
 submitBtn.addEventListener('click', (e) => {
   e.preventDefault()
