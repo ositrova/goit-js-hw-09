@@ -1,49 +1,51 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-  const submitBtn = document.querySelector('button');
-  const delayInput = document.querySelector('[name="delay"]');
-  const stepInput = document.querySelector('[name="step"]');
-  const amountInput = document.querySelector('[name="amount"]');
+const form = document.querySelector('.form');
 
-const formData = {
-  delay: 0,
-  step: 0,
-  amount: 0,
+form.addEventListener('submit', onBtnClick);
+
+function onBtnClick(e) {
+  e.preventDefault();
+
+  const {
+    delay: delayInput,
+    step: stepInput,
+    amount: amountInput,
+  } = e.currentTarget.elements;
+
+  let delay = Number(delayInput.value);
+  const step = Number(stepInput.value);
+  const amount = Number(amountInput.value);
+
+  if ((delay || amount) < 0) {
+    e.currentTarget.reset();
+    return Notify.warning('Write positive values');
+  }
+
+  for (let pos = 1; pos <= amount; pos += 1) {
+    createPromise(pos, delay)
+      .then(({ position, delay }) => {
+        Notify.success(`✅ Fulfilled promise ${position} in ${delay}ms`);
+      })
+      .catch(({ position, delay }) => {
+        Notify.failure(`❌ Rejected promise ${position} in ${delay}ms`);
+      });
+    delay += step;
+  }
 }
-
-const takingInputInfo = (e) => { formData[e.target.name] = Number(e.target.value); }
 
 function createPromise(position, delay) {
   const shouldResolve = Math.random() > 0.3;
-
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       if (shouldResolve) {
-        resolve(Notify.success(`Fulfilled promise ${position} in ${delay}ms`)) 
+        resolve({ position, delay });
       } else {
-        reject(Notify.failure(`Fulfilled promise ${position} in ${delay}ms`)) 
+        reject({ position, delay });
       }
-    }, delay )
-  })
+    }, delay);
+  });
 }
-
-delayInput.addEventListener('input', takingInputInfo);
-
-stepInput.addEventListener('input', takingInputInfo);
-
-amountInput.addEventListener('input', takingInputInfo);
-
-submitBtn.addEventListener('click', (e) => {
-  e.preventDefault()
-
-  for (let i = 1; i <= formData.amount; i += 1) {
-    createPromise(i, formData.delay)
-    .then(value => {})
-    .catch(error => {}); 
-  
-    formData.delay += formData.step;
-  }  
-})
 
 
 
