@@ -2,42 +2,16 @@ import "flatpickr/dist/themes/dark.css";
 import flatpickr from "flatpickr";
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 
-    const input = document.querySelector('#datetime-picker');
-    const startBtn = document.querySelector('[data-start]');
-    const dataDays = document.querySelector('[data-days]');
-    const dataHours = document.querySelector('[data-hours]');
-    const dataMinutes = document.querySelector('[data-minutes]');
-    const dataSeconds = document.querySelector('[data-seconds]');
+
+const input = document.querySelector('#datetime-picker');
+const startBtn = document.querySelector('[data-start]');
+const dataDays = document.querySelector('[data-days]');
+const dataHours = document.querySelector('[data-hours]');
+const dataMinutes = document.querySelector('[data-minutes]');
+const dataSeconds = document.querySelector('[data-seconds]');
 
 
-startBtn.setAttribute('disabled', true)
-
-let targetTime = null;
-
-const options = {
-  enableTime: true,
-  time_24hr: true,
-  defaultDate: new Date(),
-  minuteIncrement: 1,
-  onClose(selectedDates) {
-    const currentTime = Date.now();
-
-    const timeToEnd = selectedDates[0].getTime() - currentTime;
-
-    if (timeToEnd < 0) {
-      startBtn.setAttribute('disabled', true)
-      Notify.failure("Please choose a date in the future");    
-    } else {
-
-      targetTime = selectedDates[0].getTime();
-      startBtn.removeAttribute('disabled', true)
-    }
-  },
-};
-
-
-
-flatpickr(input, options);
+let selectedTime = null;
 
 function convertMs(ms) {
   // Number of milliseconds per unit of time
@@ -47,55 +21,76 @@ function convertMs(ms) {
   const day = hour * 24;
 
   // Remaining days
-  const days = Math.floor(ms / day);
+  const days = pad(Math.floor(ms / day));
   // Remaining hours
-  const hours = Math.floor((ms % day) / hour);
+  const hours = pad(Math.floor((ms % day) / hour));
   // Remaining minutes
-  const minutes = Math.floor(((ms % day) % hour) / minute);
+  const minutes = pad(Math.floor(((ms % day) % hour) / minute));
   // Remaining seconds
-  const seconds = Math.floor((((ms % day) % hour) % minute) / second);
+  const seconds = pad(Math.floor((((ms % day) % hour) % minute) / second));
 
   return { days, hours, minutes, seconds };
 }
 
-function addLeadingZero(value) {
-  return value.toString().padStart(2, '0')
+function pad(value) {
+  return String(value).padStart(2, '0');
 }
 
-function updateTimerValues({ days, hours, minutes, seconds }) {
-  dataDays.textContent = addLeadingZero(days);
-  dataHours.textContent = addLeadingZero(hours)
-  dataMinutes.textContent = addLeadingZero(minutes)
-  dataSeconds.textContent = addLeadingZero(seconds)
+const options = {
+  enableTime: true,
+  time_24hr: true,
+  defaultDate: new Date(),
+  minuteIncrement: 1,
+  onClose(selectedDates) {
+    if (selectedDates[0] < Date.now()) {
+      Notify.failure('Будь ласка, оберіть дату і час у майбутньому');
+      selectedDates[0] = new Date();
+    } else {
+      startBtn.disabled = false;
+      selectedTime = selectedDates[0];
+    }
+  },
+};
 
+class Timer {
+  constructor() {
+    this.timerID = null;
+    this.isActive = false;
+    startBtn.disabled = true;
+  }
+
+  startTimer() {
+    if (this.isActive) {
+      return;
+    }
+
+    this.isActive = true;
+    this.timerID = setInterval(() => {
+      const currentTime = Date.now();
+      const deltaTime = selectedTime - currentTime;
+      const componentsTimer = convertMs(deltaTime);
+      this.updateComponenetsTimer(componentsTimer);
+      if (deltaTime <= 0) {
+        this.stopTimer();
+      }
+    }, 1000);
+  }
+
+  updateComponenetsTimer({ days, hours, minutes, seconds }) {
+    dataDays.textContent = days;
+    dataHours.textContent = hours;
+    dataMinutes.textContent = minutes;
+    dataSeconds.textContent = seconds;
+  }
+
+  stopTimer() {
+    clearInterval(this.timerID);
+  }
 }
 
-startBtn.addEventListener('click', () => {
-  let timeToEnd =  Math.ceil((targetTime - Date.now()) / 1000) * 1000
-  
-  const timerId = setInterval(() => {  
-    updateTimerValues(convertMs(timeToEnd));
-    timeToEnd -= 1000;
-
-  }, 1000)
-
-  setTimeout(() => {
-    clearInterval(timerId)
-  } , timeToEnd + 1000)
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
+const timer = new Timer();
+flatpickr(input, options);
+startBtn.addEventListener('click', () => timer.startTimer());
 
 
 
